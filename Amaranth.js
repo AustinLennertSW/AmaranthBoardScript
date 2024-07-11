@@ -393,7 +393,7 @@
             }
 
             function addCopyButtons() {
-                let summary = $(".ModalProjectSummary");
+                let summary = $(".ModalPopup").last().find(".ModalProjectSummary");
                 let copyIDButton = generateCopyElement(summary.attr("data-project-id"), 20);
                 let copySummaryButton = generateCopyElement(summary.text(), 20);
                 summary.prepend(copyIDButton[0]);
@@ -516,7 +516,7 @@
             parsedDescription.append(`<md-block>${contents}</md-block>`);
 
             // Add md-block to action notes
-            $(".js-projectActions .js-actionContainer").each((index, action) =>{
+            $(".ModalPopup").last().find(".js-projectActions .js-actionContainer").each((_, action) =>{
                 let actionNote = $(action).find(".ActionNotes > p");
                 let textContent = actionNote.text();
                 actionNote.contents().filter(function(){ return this.nodeType != 1; }).remove();  // Deletes text content
@@ -524,7 +524,7 @@
 
             })
         }
-        kanbanboard.projectDetailsModal.addInit(addMdBlockElements );
+        kanbanboard.projectDetailsModal.addInit(addMdBlockElements);
     }
 
     /** Sets up https://www.makeuseof.com/md-block-render-markdown-web-page/ to render md-block elements*/
