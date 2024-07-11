@@ -13,52 +13,56 @@
 (function() {
     'use strict';
 
-    const devIDs = {
-        Ski: 10331,
-        Hans: 10225,
-        Hietpas: 10240,
-        Pritzl: 10101,
-        Austin: 11166,
-        Spencer: 10120,
-        Carson: 10882,
-        Amaranth: 10358
-    };
-
-    const devIDsByAssignedToName = {
-        "Nick Sosinski": devIDs.Ski,
-        "Nick Hansen": devIDs.Hans,
-        "Matt Hietpas": devIDs.Hietpas,
-        "Matthew Pritzl": devIDs.Pritzl,
-        "Austin Lennert": devIDs.Austin,
-        "Spencer Krause": devIDs.Spencer,
-        "Carson Crueger": devIDs.Carson,
-        "Amaranth Team": devIDs.Amaranth
-    };
-
-    const lightColors = {
-        [devIDs.Ski]: '#FCDE89',
-        [devIDs.Hans]: '#BC9EE6',
-        [devIDs.Hietpas]: '#00E5CA',
-        [devIDs.Pritzl]: '#56B550',//'#64A460',
-        [devIDs.Austin]: '#779ECB',
-        [devIDs.Spencer]: '#FF7F50',
-        [devIDs.Carson]: '#CD5755',
-        9471: 'Khaki', //Jason G
-        10886: '#FFAC81'//Megan M
-    };
-
-    // Feel free to change dark mode colors
-    const darkColors = {
-        [devIDs.Ski]: '#9A7204',
-        [devIDs.Hans]: '#532692',
-        [devIDs.Hietpas]: '#004D44',
-        [devIDs.Pritzl]: '#435421',
-        [devIDs.Austin]: '#22577A',
-        [devIDs.Spencer]: '#594A31',
-        [devIDs.Carson]: '#CD5755',
-        9471: '#594A31', //Jason G
-        10886: '#B33B00'//Megan M
-    };
+    const devs = {
+        Ski: {
+            ID: 10331,
+            Name: "Nick Sosinski",
+            LightColor: "#FCDE89",
+            DarkColor: "#9A7204"
+        },
+        Hans: {
+            ID: 10225,
+            Name: "Nick Hansen",
+            LightColor: "#BC9EE6",
+            DarkColor: "#532692"
+        },
+        Hietpas: {
+            ID: 10240,
+            Name: "Matt Hietpas",
+            LightColor: "#00E5CA",
+            DarkColor: "#004D44"
+        },
+        Pritzl: {
+            ID: 10101,
+            Name: "Matthew Pritzl",
+            LightColor: "#56B550",  // '#64A460'
+            DarkColor: "#435421"
+        },
+        Austin: {
+            ID: 11166,
+            Name: "Austin Lennert",
+            LightColor: "#779ECB",
+            DarkColor: "#22577A"
+        },
+        Spencer: {
+            ID: 10120,
+            Name: "Spencer Krause",
+            LightColor: "#FF7F50",
+            DarkColor: "#594A31"
+        },
+        Carson: {
+            ID: 10882,
+            Name: "Carson Crueger",
+            LightColor: "#CD5755",
+            DarkColor: "#CD5755"
+        },
+        Amaranth: {
+            ID: 10358,
+            Name: "Amaranth Team",
+            LightColor: "var(--secondary-color-bg)",
+            DarkColor: "var(--secondary-color-bg)"
+        }
+    }
 
     const projectPoints = {
         'XS': 2,
@@ -80,17 +84,18 @@
 
     addCustomStyles();
     autoMarkPatch();
+    setAssignedData();
+    colorCardByDev();
     kanbanboard.connection.on("moveCard", displayPointValues);
-    kanbanboard.connection.on("updateprojectassignedto", colorCardByDev);
+    kanbanboard.connection.on("updateprojectassignedto", setAssignedData);
 
     kanbanboard.base.addInit(displayPointValues);  // Show point values whenever the board is loaded or refreshed
     kanbanboard.base.addInit(colorCardByDev);
 
     const currentUserID = kanbanboard.staffID;
-    const currentUserName = document.querySelector(`#HiddenTeamList option[value="${currentUserID}"]`).innerText.trim();
     switch (currentUserID)
     {
-        case devIDs.Austin:
+        case devs.Austin.ID:
             addOpenProjectControls();
             addSignalRMethodLogs();
             addCopyButtonsToPRModal();
@@ -99,7 +104,7 @@
             addMdBlockElementsHandler();
             break;
 
-        case devIDs.Ski:
+        case devs.Ski.ID:
             removeWIP();
             break;
     }
@@ -109,13 +114,13 @@
         return document.documentElement.getAttribute('data-theme');
     }
 
-    function getColor(devID)
+    function getColor(dev)
     {
         const theme = getTheme();
         return theme == 'light'
-            ? lightColors[devID]
+            ? dev.LightColor
         : theme == 'dark'
-            ? darkColors[devID]
+            ? dev.DarkColor
         : null;
     }
 
@@ -206,50 +211,45 @@
 
     function colorCardByDev() {
         try {
-			setTimeout(() => {
-				$('.Project').each((index, project) => {
-					var item = $(project);
+            // This assumes all DevIDs we care about have a '1' somewhere in them to avoid coloring backlogged projects
+            let styles = ".Project[data-developer-staff-i-d*='1'] {background: linear-gradient(180deg, var(--devColorMain) 50%, var(--devColorAssigned) 100%);}\n";
+            const createDevStyle = (dev) => {
+                return `.Project[data-developer-staff-i-d="${dev.ID}"] {--devColorMain: ${getColor(dev)}}\n
+                        .Project[data-assignee-staff-i-d="${dev.ID}"] {--devColorAssigned: ${getColor(dev)}}\n`;
+            }
 
-					var x = item.closest('div#BacklogContainer');
-					if (x.length == 0)
-					{
-						var devID = item.attr('data-developer-staff-i-d');
-
-						var devColor = "white";
-						if (devID)
-						{
-							devColor = `var(--devColor${devID})`;
-							item.toggleClass('missing-dev', false);
-						}
-						else
-						{
-							item.toggleClass('missing-dev', true);
-						}
-
-						var assignedToDiv = item.find('.ProjectAssignedTo')[0];
-						var assignedTo = assignedToDiv.innerText;
-						var assignedToID = devIDsByAssignedToName[assignedTo];
-
-						var assignedToColor = "white";
-
-						if (assignedToID)
-						{
-							if (assignedToID == devIDs.Amaranth)
-							{
-								assignedToColor = devColor;
-							}
-							else
-							{
-								assignedToColor = `var(--devColor${assignedToID})`;
-							}
-						}
-
-						item.css('background', `linear-gradient(${devColor}, ${devColor}, ${assignedToColor})`);
-					}
-				});
-			}, 50);
-		} catch (error) {
+            for (const devKey of Object.keys(devs)) {
+                let dev = devs[devKey];
+                styles += createDevStyle(dev);
+            }
+            $('head').append(`<style>${styles}</style>`);
+        } catch (error) {
             console.error("CUSTOM SCRIPT: There was a problem when running the 'colorCardByDev' script:");
+            console.error(error);
+        }
+    }
+
+    /** Loops through each project and assigns the staff ID of the Assigned to person to `data-assignee-staff-i-d` attribute */
+    function setAssignedData() {
+        try {
+            setTimeout(() => {
+                $('.Project').each((_, project) => {  // TODO: Remove value when assigned to unknown
+                    let item = $(project);
+
+                    let assignedToDiv = item.find('.ProjectAssignedTo')[0];
+                    let assignedTo = assignedToDiv.innerText;
+                    let assignedToID = null;
+                    for (const devKey of Object.keys(devs)) {
+                        let dev = devs[devKey];
+                        if (dev.Name != assignedTo) { continue }
+                        assignedToID = dev.ID;
+                        item.attr('data-assignee-staff-i-d', assignedToID)
+                        break;
+                    }
+                });
+            }, 50);  // TODO: Delay needed?
+        } catch (error) {
+            console.error("CUSTOM SCRIPT: There was a problem when running the 'setAssignedData' script:");
             console.error(error);
         }
     }
@@ -268,7 +268,7 @@
 
     function getIndicators(projectID) {
         let indicatorIDs = [];
-        $(`[data-project-id='${projectID}']`).find(".project__indicator").each((indInd, indicator) => {
+        $(`[data-project-id='${projectID}']`).find(".project__indicator").each((indIndex, indicator) => {
             indicator = $(indicator)[0];
             if (!indicator.getAttribute("title").includes("From Parent #"))  // Cannot include an indicator that is auto given from a parent because it will have double indicator
             {
@@ -311,7 +311,6 @@
                         return;
                     }
                     let targetReleaseContainer = item.find(".TargetRelease");
-                    let indicators = item.find(".project__indicator");
                     if (targetReleaseContainer.length != 1) {
                         return
                     }
@@ -513,8 +512,8 @@
 
     /** Adds custom styles */
     function addCustomStyles() {
-        try {
-            $('body').append(`<style>
+        try {  // TODO: Add back .missing-dev class
+            $('head').append(`<style>
                 .missing-dev {
                     animation: blinkingBackground 4s infinite;
                 }
@@ -538,26 +537,6 @@
                     width: 100%;
                 }
             </style>`);
-
-			let styles = "";
-            const createDevStyle = function (devID)
-            {
-                if (getColor(devID))
-                {
-                    return `--devColor${devID}: ${getColor(devID)};\n`;
-                }
-                else
-                {
-                    return '';
-                }
-            }
-
-
-            for (const id of Object.keys(devIDs)) {
-                styles += createDevStyle(devIDs[id]);
-            }
-            $('body').append(`<style>html\n{\n${styles}\n}\n</style>`);
-
 
         } catch (error) {
             console.error("CUSTOM SCRIPT: There was a problem when running the 'addCustomStyles' script:");
