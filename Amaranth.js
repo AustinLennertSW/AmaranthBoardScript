@@ -507,6 +507,7 @@
 
                 md-block > p {
                     display: inline-block;
+                    width: 100%;
                 }
             </style>`);
         } catch (error) {
@@ -518,8 +519,8 @@
 
 /** Next until but includes text nodes as well */
 $.fn.nextUntilWithTextNodes = function (until) {
-    var matched = $.map(this, function (elem, i, until) {
-        var matched = [];
+    let matched = $.map(this, function (elem, i, until) {
+        let matched = [];
         while ((elem = elem.nextSibling) && elem.nodeType !== 9) {
             if (elem.nodeType === 1 || elem.nodeType === 3) {
                 if (until && jQuery(elem).is(until)) {
