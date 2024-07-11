@@ -103,28 +103,13 @@
     }
     else  // On Regular Board
     {
+        displayPointValuesOnGoal()
         kanbanboard.base.addInit(displayPointValues); // Show point values whenever the board is loaded or refreshed
         kanbanboard.base.addInit(setAssignedData);
         kanbanboard.base.addInit(autoMarkPatch);
         kanbanboard.connection.on("moveCard", displayPointValues);
         kanbanboard.connection.on("updateprojectassignedto", setAssignedData);
 
-        // TODO: This is ugly but I hit my 40hr mark so ima put this into it's own method on Monday - Austin
-        $(".menuItems #CycleGoal").click(() => {
-            setTimeout(() => {
-                let goalPoints = 0;
-                $("tbody .cycleGoal__projectSize").each(( index, row ) => {
-                    let sizeElem = $(row);
-                    let projectValue = projectPoints[sizeElem.text().trim()];
-                    row.append(`(${projectValue})`);
-                    goalPoints += projectValue;
-                });
-                $(".projectModalRow").append(`
-                    <span>Total Points:</span>
-                    <span id="CycleGoal_TotalPoints" class="cycleGoal__details">${goalPoints}</span>`
-                );
-            }, 1000);
-        });
     }
 
     const currentUserID = kanbanboard.staffID;
@@ -240,6 +225,37 @@
             }, 350);
         } catch (error) {
             console.error("CUSTOM SCRIPT: There was a problem when running the 'displayPointValues' script:");
+            console.error(error);
+        }
+    }
+
+    /** Displays project point values and totals on the goal modal */
+    function displayPointValuesOnGoal() {
+        try {
+            $(".menuItems #CycleGoal").click(() => {
+                setTimeout(() => {
+                    let goalPoints = 0;
+
+                    // Loop through each project in goal
+                    $("tbody .cycleGoal__projectSize").each(( _, row ) => {
+                        let sizeElem = $(row);
+                        let projectValue = projectPoints[sizeElem.text().trim()];
+                        if (projectValue == undefined) {
+                            return true;  // continue
+                         }
+                        row.append(`(${projectValue})`);
+                        goalPoints += projectValue;
+                    });
+
+                    // Add "Total Point" section
+                    $(".projectModalRow").append(`
+                        <span>Total Points:</span>
+                        <span id="CycleGoal_TotalPoints" class="cycleGoal__details">${goalPoints}</span>`
+                    );
+                }, 1000);
+            });
+        } catch (error) {
+            console.error("CUSTOM SCRIPT: There was a problem when running the 'displayPointValuesOnGoal' script:");
             console.error(error);
         }
     }
