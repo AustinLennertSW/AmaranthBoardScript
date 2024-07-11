@@ -19,30 +19,45 @@
         Hietpas: 10240,
         Pritzl: 10101,
         Austin: 11166,
-        Spencer: 10120
+        Spencer: 10120,
+        Carson: 10882,
+        Amaranth: 10358
+    };
+
+    const devIDsByAssignedToName = {
+        "Nick Sosinski": devIDs.Ski,
+        "Nick Hansen": devIDs.Hans,
+        "Matt Hietpas": devIDs.Hietpas,
+        "Matthew Pritzl": devIDs.Pritzl,
+        "Austin Lennert": devIDs.Austin,
+        "Spencer Krause": devIDs.Spencer,
+        "Carson Crueger": devIDs.Carson,
+        "Amaranth Team": devIDs.Amaranth
     };
 
     const lightColors = {
-        [devIDs.Ski]: '#fcde89',
-        [devIDs.Hans]: '#bc9ee6',
+        [devIDs.Ski]: '#FCDE89',
+        [devIDs.Hans]: '#BC9EE6',
         [devIDs.Hietpas]: '#00E5CA',
-        [devIDs.Pritzl]: '#64a460',
+        [devIDs.Pritzl]: '#56B550',//'#64A460',
         [devIDs.Austin]: '#779ECB',
         [devIDs.Spencer]: '#FF7F50',
-        9471: 'Khaki',
-        10886: '#ffac81'//Megan M
+        [devIDs.Carson]: '#CD5755',
+        9471: 'Khaki', //Jason G
+        10886: '#FFAC81'//Megan M
     };
 
     // Feel free to change dark mode colors
     const darkColors = {
-        [devIDs.Ski]: '#9a7204',
+        [devIDs.Ski]: '#9A7204',
         [devIDs.Hans]: '#532692',
-        [devIDs.Hietpas]: '#004d44',
+        [devIDs.Hietpas]: '#004D44',
         [devIDs.Pritzl]: '#435421',
         [devIDs.Austin]: '#22577A',
-        [devIDs.Spencer]: '#594a31',
-        9471: '#594a31',
-        10886: '#b33b00'//Megan M
+        [devIDs.Spencer]: '#594A31',
+        [devIDs.Carson]: '#CD5755',
+        9471: '#594A31', //Jason G
+        10886: '#B33B00'//Megan M
     };
 
     const projectPoints = {
@@ -64,27 +79,24 @@
     };
 
     addCustomStyles();
-    colorCardByDev();
     autoMarkPatch();
     kanbanboard.connection.on("moveCard", displayPointValues);
+    kanbanboard.connection.on("updateprojectassignedto", colorCardByDev);
 
     kanbanboard.base.addInit(displayPointValues);  // Show point values whenever the board is loaded or refreshed
+    kanbanboard.base.addInit(colorCardByDev);
 
     const currentUserID = kanbanboard.staffID;
     const currentUserName = document.querySelector(`#HiddenTeamList option[value="${currentUserID}"]`).innerText.trim();
     switch (currentUserID)
     {
         case devIDs.Austin:
-			addOpenProjectControls();
+            addOpenProjectControls();
             addSignalRMethodLogs();
             addCopyButtonsToPRModal();
             removeWIP();
             addMarkdownBlockRenderer();
             addMdBlockElementsHandler();
-            break;
-
-        case devIDs.Pritzl:
-            updateAssignedToColors(devIDs.Pritzl);
             break;
 
         case devIDs.Ski:
@@ -97,22 +109,6 @@
         return document.documentElement.getAttribute('data-theme');
     }
 
-    /** Sets styles to color each card based on the primary dev */
-    function colorCardByDev() {
-        try {
-            let styles = "";
-            const createDevStyle = (devID) => `.Project[data-developer-staff-i-d="${devID}"] {background-color: ${getColor(devID)};}\n`;
-
-            for (const id of Object.keys(devIDs)) {
-                styles += createDevStyle(devIDs[id]);
-            }
-            $('body').append(`<style>${styles}</style>`);
-        } catch (error) {
-            console.error("CUSTOM SCRIPT: There was a problem when running the 'colorCardByDev' script:");
-            console.error(error);
-        }
-    }
-
     function getColor(devID)
     {
         const theme = getTheme();
@@ -121,24 +117,6 @@
         : theme == 'dark'
             ? darkColors[devID]
         : null;
-    }
-
-    /** Colors each card based on their assigned dev */
-    function updateAssignedToColors(devID)
-    {
-        $('.ProjectAssignedTo').each((index, projectAssignedToDiv) =>
-        {
-            var item = $(projectAssignedToDiv);
-            var assignedTo = item.text();
-            if (currentUserName == assignedTo)
-            {
-                var color = getColor(devID);
-                if (color)
-                {
-                    item.parents('.Project').css("background-color", color);
-                }
-            }
-        });
     }
 
     function addBox(boxID, text, insertBeforeSelector)
@@ -215,7 +193,7 @@
                 {
                     addBox('TotalRemainingPoints', `In Progress: ${totalInProgressPoints}`, 'span[title="Work in Progress"]');
                 }
-                if (totals['Closed'].length > 0)
+                if (totals['Closed'] && totals['Closed'].length > 0)
                 {
                     addBox('ClosedCycle', `Closed: ${totals['Closed'].reduce((a, b) => a+b, 0)}`, 'span[title="Work in Progress"]');
                 }
@@ -226,15 +204,65 @@
         }
     }
 
+    function colorCardByDev() {
+        try {
+			setTimeout(() => {
+				$('.Project').each((index, project) => {
+					var item = $(project);
+
+					var x = item.closest('div#BacklogContainer');
+					if (x.length == 0)
+					{
+						var devID = item.attr('data-developer-staff-i-d');
+
+						var devColor = "white";
+						if (devID)
+						{
+							devColor = `var(--devColor${devID})`;
+							item.toggleClass('missing-dev', false);
+						}
+						else
+						{
+							item.toggleClass('missing-dev', true);
+						}
+
+						var assignedToDiv = item.find('.ProjectAssignedTo')[0];
+						var assignedTo = assignedToDiv.innerText;
+						var assignedToID = devIDsByAssignedToName[assignedTo];
+
+						var assignedToColor = "white";
+
+						if (assignedToID)
+						{
+							if (assignedToID == devIDs.Amaranth)
+							{
+								assignedToColor = devColor;
+							}
+							else
+							{
+								assignedToColor = `var(--devColor${assignedToID})`;
+							}
+						}
+
+						item.css('background', `linear-gradient(${devColor}, ${devColor}, ${assignedToColor})`);
+					}
+				});
+			}, 50);
+		} catch (error) {
+            console.error("CUSTOM SCRIPT: There was a problem when running the 'colorCardByDev' script:");
+            console.error(error);
+        }
+    }
+
     function setIndicators(projectID, indicatorIDs) {
         let formData = new FormData();
         formData.append('currentTeamID', 10358);
         formData.append('projectID', projectID);
-		
-		if (indicatorIDs && indicatorIDs.length > 0)
-		{
-			indicatorIDs.forEach((indicatorID) => formData.append('indicatorIDs[]', indicatorID));
-		}
+
+        if (indicatorIDs && indicatorIDs.length > 0)
+        {
+            indicatorIDs.forEach((indicatorID) => formData.append('indicatorIDs[]', indicatorID));
+        }
         fetch('https://qdevweb.skyward.com/Kanban/api/Indicator/SaveProjectIndicators', { method: "POST", body: formData });
     }
 
@@ -244,14 +272,14 @@
             indicator = $(indicator)[0];
             if (!indicator.getAttribute("title").includes("From Parent #"))  // Cannot include an indicator that is auto given from a parent because it will have double indicator
             {
-				let indicatorID = indicator.getAttribute("data-indicator-id");
-				if (indicatorID != 0)
-				{
-					indicatorIDs.push(indicatorID);
-				}
+                let indicatorID = indicator.getAttribute("data-indicator-id");
+                if (indicatorID != 0)
+                {
+                    indicatorIDs.push(indicatorID);
+                }
             }
         });
-		
+
         return indicatorIDs;
     }
 
@@ -329,11 +357,11 @@
                         <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
                     </svg>
                 </clipboard-copy></span>`);}
- 
+
             function copy(text) {
                 return navigator.clipboard.writeText(text);
             }
- 
+
             function addCopyButtons() {
                 let summary = $(".ModalProjectSummary");
                 let copyIDButton = generateCopyElement(summary.attr("data-project-id"), 20);
@@ -341,7 +369,7 @@
                 summary.prepend(copyIDButton[0]);
                 summary.append(copySummaryButton[0]);
             }
- 
+
             kanbanboard.projectDetailsModal.addInit(addCopyButtons);
             $(document).on("click", "clipboard-copy", (e) => { copy(e.currentTarget.getAttribute("value")); });
         } catch (error) {
@@ -354,23 +382,23 @@
     function addSignalRMethodLogs() {
         try {
             let methodNames =
-            [
-                "addProjectCard",
-                "moveCard",
-                "notify",
-                "refreshBacklog",
-                "refreshBoard",
-                "removeIndicator",
-                "removeProjectCard",
-                "updateActionsRunning",
-                "updateBoardToNewSprint",
-                "updateHoldStatus",
-                "updateIndicator",
-                "updateIndicatorsForProject",
-                "updateIndicatorsForProjects",
-                "updateProjectAssignedTo",
-                "updateUserActionRunning"
-            ];
+                [
+                    "addProjectCard",
+                    "moveCard",
+                    "notify",
+                    "refreshBacklog",
+                    "refreshBoard",
+                    "removeIndicator",
+                    "removeProjectCard",
+                    "updateActionsRunning",
+                    "updateBoardToNewSprint",
+                    "updateHoldStatus",
+                    "updateIndicator",
+                    "updateIndicatorsForProject",
+                    "updateIndicatorsForProjects",
+                    "updateProjectAssignedTo",
+                    "updateUserActionRunning"
+                ];
             for(let methodName of methodNames) {
                 kanbanboard.connection.on(methodName, () => console.log(`SignalR method triggered: ${methodName}`));
             }
@@ -475,12 +503,12 @@
         const mdBlockJSURL = "https://md-block.verou.me/md-block.js";
         fetch(mdBlockJSURL, { method: "GET" })
             .then((res) => {
-                return res.text();
-            })
+            return res.text();
+        })
             .then((text) => {
-                let mdBlock = text.replaceAll("export ", "");
-                eval(mdBlock);
-            });
+            let mdBlock = text.replaceAll("export ", "");
+            eval(mdBlock);
+        });
     }
 
     /** Adds custom styles */
@@ -510,6 +538,27 @@
                     width: 100%;
                 }
             </style>`);
+
+			let styles = "";
+            const createDevStyle = function (devID)
+            {
+                if (getColor(devID))
+                {
+                    return `--devColor${devID}: ${getColor(devID)};\n`;
+                }
+                else
+                {
+                    return '';
+                }
+            }
+
+
+            for (const id of Object.keys(devIDs)) {
+                styles += createDevStyle(devIDs[id]);
+            }
+            $('body').append(`<style>html\n{\n${styles}\n}\n</style>`);
+
+
         } catch (error) {
             console.error("CUSTOM SCRIPT: There was a problem when running the 'addCustomStyles' script:");
             console.error(error);
