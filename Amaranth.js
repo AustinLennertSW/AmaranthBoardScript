@@ -103,7 +103,7 @@
     }
     else  // On Regular Board
     {
-        displayPointValuesOnGoal()
+        displayPointValuesOnGoal()  // This sets up a click event so it shouldn't need to be reran
         kanbanboard.base.addInit(displayPointValues); // Show point values whenever the board is loaded or refreshed
         kanbanboard.base.addInit(setAssignedData);
         kanbanboard.base.addInit(autoMarkPatch);
@@ -116,6 +116,7 @@
     switch (currentUserID)
     {
         case devs.Austin.ID:
+            enlargeGoalModal()
             addOpenProjectControls();
             addSignalRMethodLogs();
             addCopyButtonsToPRModal();
@@ -125,6 +126,7 @@
             break;
 
         case devs.Ski.ID:
+            enlargeGoalModal()
             removeWIP();
             break;
     }
@@ -256,6 +258,20 @@
             });
         } catch (error) {
             console.error("CUSTOM SCRIPT: There was a problem when running the 'displayPointValuesOnGoal' script:");
+            console.error(error);
+        }
+    }
+
+    /** Enlargens the Goal Modal when opened to be sized like most modals */
+    function enlargeGoalModal() {
+        try {
+            $(".menuItems #CycleGoal").click(() => {
+                setTimeout(() => {
+                    $(".ModalPopup:has(.js-cycleGoal)").css({height: "90%", top: "5%"})
+                }, 250);
+            });
+        } catch (error) {
+            console.error("CUSTOM SCRIPT: There was a problem when running the 'enlargeGoalModal' script:");
             console.error(error);
         }
     }
