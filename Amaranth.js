@@ -35,7 +35,7 @@
         Pritzl: {
             ID: 10101,
             Name: "Matthew Pritzl",
-            LightColor: "#56B550",  // '#64A460'
+            LightColor: "#56B550",
             DarkColor: "#435421"
         },
         Austin: {
@@ -55,6 +55,18 @@
             Name: "Carson Crueger",
             LightColor: "#CD5755",
             DarkColor: "#CD5755"
+        },
+        Jason: {
+            ID: 9471,
+            Name: "Jason Galloway",
+            LightColor: "Khaki",
+            DarkColor: "#594A31"
+        },
+        MeganM: {
+            ID: 10886,
+            Name: "Megan Melville",
+            LightColor: "#FFAC81",
+            DarkColor: "#B33B00"
         },
         Amaranth: {
             ID: 10358,
@@ -83,14 +95,12 @@
     };
 
     addCustomStyles();
-    autoMarkPatch();
-    setAssignedData();
-    colorCardByDev();
+
+    kanbanboard.base.addInit(displayPointValues); // Show point values whenever the board is loaded or refreshed
+    kanbanboard.base.addInit(setAssignedData);
+    kanbanboard.base.addInit(autoMarkPatch);
     kanbanboard.connection.on("moveCard", displayPointValues);
     kanbanboard.connection.on("updateprojectassignedto", setAssignedData);
-
-    kanbanboard.base.addInit(displayPointValues);  // Show point values whenever the board is loaded or refreshed
-    kanbanboard.base.addInit(colorCardByDev);
 
     const currentUserID = kanbanboard.staffID;
     switch (currentUserID)
@@ -205,26 +215,6 @@
             }, 350);
         } catch (error) {
             console.error("CUSTOM SCRIPT: There was a problem when running the 'displayPointValues' script:");
-            console.error(error);
-        }
-    }
-
-    function colorCardByDev() {
-        try {
-            // This assumes all DevIDs we care about have a '1' somewhere in them to avoid coloring backlogged projects
-            let styles = ".Project[data-developer-staff-i-d*='1'] {background: linear-gradient(180deg, var(--devColorMain) 50%, var(--devColorAssigned) 100%);}\n";
-            const createDevStyle = (dev) => {
-                return `.Project[data-developer-staff-i-d="${dev.ID}"] {--devColorMain: ${getColor(dev)}}\n
-                        .Project[data-assignee-staff-i-d="${dev.ID}"] {--devColorAssigned: ${getColor(dev)}}\n`;
-            }
-
-            for (const devKey of Object.keys(devs)) {
-                let dev = devs[devKey];
-                styles += createDevStyle(dev);
-            }
-            $('head').append(`<style>${styles}</style>`);
-        } catch (error) {
-            console.error("CUSTOM SCRIPT: There was a problem when running the 'colorCardByDev' script:");
             console.error(error);
         }
     }
@@ -512,7 +502,19 @@
 
     /** Adds custom styles */
     function addCustomStyles() {
-        try {  // TODO: Add back .missing-dev class
+        try {
+            // This assumes all DevIDs we care about have a '1' somewhere in them to avoid coloring backlogged projects
+            let styles = ".Project[data-developer-staff-i-d*='1'] {background: linear-gradient(var(--devColorMain), var(--devColorMain), var(--devColorAssigned));}\n";
+            const createDevStyle = (dev) => {
+                return `.Project[data-developer-staff-i-d="${dev.ID}"] {--devColorMain: ${getColor(dev)}}\n
+                        .Project[data-assignee-staff-i-d="${dev.ID}"] {--devColorAssigned: ${getColor(dev)}}\n`;
+            }
+
+            for (const devKey of Object.keys(devs)) {
+                let dev = devs[devKey];
+                styles += createDevStyle(dev);
+            }
+
             $('head').append(`<style>
                 .missing-dev {
                     animation: blinkingBackground 4s infinite;
@@ -536,8 +538,9 @@
                     display: inline-block;
                     width: 100%;
                 }
-            </style>`);
 
+				${styles}
+            </style>`);
         } catch (error) {
             console.error("CUSTOM SCRIPT: There was a problem when running the 'addCustomStyles' script:");
             console.error(error);
