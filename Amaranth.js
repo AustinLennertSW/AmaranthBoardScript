@@ -547,7 +547,7 @@
 
             // This assumes all DevIDs we care about have a '1' somewhere in them to avoid coloring backlogged projects
             $('head').append(`<style>
-.Project[data-developer-staff-i-d*='1'] {
+.Project[data-developer-staff-i-d*='1']:not(.project__runningActionBackground) {
     background: linear-gradient(var(--devColorMain), var(--devColorMain), var(--devColorAssigned));
 }
 
