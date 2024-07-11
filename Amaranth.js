@@ -90,17 +90,42 @@
         'Merge': 0.5,
         'UrgentQATestingPending': 0.5,
         'QATestingPending': 0.5,
-        'QATestingDidNotPass': 0.5,
         'Cleanup': 0.5
     };
 
+    const isOnBacklog = kanbanboard.base == undefined;
+
     addCustomStyles();
 
-    kanbanboard.base.addInit(displayPointValues); // Show point values whenever the board is loaded or refreshed
-    kanbanboard.base.addInit(setAssignedData);
-    kanbanboard.base.addInit(autoMarkPatch);
-    kanbanboard.connection.on("moveCard", displayPointValues);
-    kanbanboard.connection.on("updateprojectassignedto", setAssignedData);
+    if (isOnBacklog) {
+        displayPointValues();
+        kanbanboard.connection.on("refreshBacklog", () => { setTimeout(displayPointValues, 500); });
+    }
+    else  // On Regular Board
+    {
+        kanbanboard.base.addInit(displayPointValues); // Show point values whenever the board is loaded or refreshed
+        kanbanboard.base.addInit(setAssignedData);
+        kanbanboard.base.addInit(autoMarkPatch);
+        kanbanboard.connection.on("moveCard", displayPointValues);
+        kanbanboard.connection.on("updateprojectassignedto", setAssignedData);
+
+        // TODO: This is ugly but I hit my 40hr mark so ima put this into it's own method on Monday - Austin
+        $(".menuItems #CycleGoal").click(() => {
+            setTimeout(() => {
+                let goalPoints = 0;
+                $("tbody .cycleGoal__projectSize").each(( index, row ) => {
+                    let sizeElem = $(row);
+                    let projectValue = projectPoints[sizeElem.text().trim()];
+                    row.append(`(${projectValue})`);
+                    goalPoints += projectValue;
+                });
+                $(".projectModalRow").append(`
+                    <span>Total Points:</span>
+                    <span id="CycleGoal_TotalPoints" class="cycleGoal__details">${goalPoints}</span>`
+                );
+            }, 1000);
+        });
+    }
 
     const currentUserID = kanbanboard.staffID;
     switch (currentUserID)
@@ -503,44 +528,56 @@
     /** Adds custom styles */
     function addCustomStyles() {
         try {
-            // This assumes all DevIDs we care about have a '1' somewhere in them to avoid coloring backlogged projects
-            let styles = ".Project[data-developer-staff-i-d*='1'] {background: linear-gradient(var(--devColorMain), var(--devColorMain), var(--devColorAssigned));}\n";
-            const createDevStyle = (dev) => {
-                return `.Project[data-developer-staff-i-d="${dev.ID}"] {--devColorMain: ${getColor(dev)}}\n
-                        .Project[data-assignee-staff-i-d="${dev.ID}"] {--devColorAssigned: ${getColor(dev)}}\n`;
-            }
+            let devColors = "";
+            let devStyles = "";
+            let assigneeStyles = "";
+
+            const addDevColor = (dev) => { devColors += `--devColor${dev.ID}: ${getColor(dev)}; `; }
+
+            const addDevStyle = (dev) => { devStyles += `.Project[data-developer-staff-i-d="${dev.ID}"] { --devColorMain: var(--devColor${dev.ID}) } \n`; }
+
+            const addAssigneeStyle = (dev) => { assigneeStyles += `.Project[data-assignee-staff-i-d="${dev.ID}"] { --devColorAssigned: var(--devColor${dev.ID}) } \n`; }
 
             for (const devKey of Object.keys(devs)) {
                 let dev = devs[devKey];
-                styles += createDevStyle(dev);
+                addDevColor(dev);
+                addDevStyle(dev);
+                addAssigneeStyle(dev);
             }
 
+            // This assumes all DevIDs we care about have a '1' somewhere in them to avoid coloring backlogged projects
             $('head').append(`<style>
-                .missing-dev {
-                    animation: blinkingBackground 4s infinite;
-                }
+.Project[data-developer-staff-i-d*='1'] {
+    background: linear-gradient(var(--devColorMain), var(--devColorMain), var(--devColorAssigned));
+}
 
-                @keyframes blinkingBackground {
-                    0% { background-color: #ff0000; }
-                    50% { background-color: #ff9999; }
-                    100% { background-color: #ff0000; }
-                }
+.missing-dev {
+    animation: blinkingBackground 4s infinite;
+}
 
-                clipboard-copy {
-                    cursor: pointer;
-                }
+@keyframes blinkingBackground {
+    0% { background-color: #ff0000; }
+    50% { background-color: #ff9999; }
+    100% { background-color: #ff0000; }
+}
 
-                clipboard-copy:hover svg {
-                    fill: #4493f8;
-                }
+clipboard-copy {
+    cursor: pointer;
+}
 
-                md-block > p {
-                    display: inline-block;
-                    width: 100%;
-                }
+clipboard-copy:hover svg {
+    fill: #4493f8;
+}
 
-				${styles}
-            </style>`);
+md-block > p {
+    display: inline-block;
+    width: 100%;
+}
+
+${devStyles}
+${assigneeStyles}
+html { ${devColors} }
+</style>`);
         } catch (error) {
             console.error("CUSTOM SCRIPT: There was a problem when running the 'addCustomStyles' script:");
             console.error(error);
