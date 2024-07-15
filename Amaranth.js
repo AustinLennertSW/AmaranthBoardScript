@@ -67,12 +67,6 @@
             Name: "Megan Melville",
             LightColor: "#FFAC81",
             DarkColor: "#B33B00"
-        },
-        Amaranth: {
-            ID: 10358,
-            Name: "Amaranth Team",
-            LightColor: "var(--secondary-color-bg)",
-            DarkColor: "var(--secondary-color-bg)"
         }
     }
 
@@ -579,6 +573,10 @@
 
             // This assumes all DevIDs we care about have a '1' somewhere in them to avoid coloring backlogged projects
             $('head').append(`<style>
+.Project {
+    --devColorMain: var(--secondary-color-bg);
+    --devColorAssigned: var(--secondary-color-bg);
+}
 .Project[data-developer-staff-i-d*='1']:not(.project__runningActionBackground) {
     background: linear-gradient(var(--devColorMain), var(--devColorMain), var(--devColorAssigned));
 }
