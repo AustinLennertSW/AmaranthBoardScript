@@ -102,6 +102,7 @@
         kanbanboard.base.addInit(setAssignedData);
         kanbanboard.base.addInit(autoMarkPatch);
         kanbanboard.connection.on("moveCard", displayPointValues);
+        kanbanboard.connection.on("moveCard", setAssignedData);
         kanbanboard.connection.on("updateprojectassignedto", setAssignedData);
 
     }
@@ -278,15 +279,15 @@
                     let item = $(project);
 
                     let assignedToDiv = item.find('.ProjectAssignedTo')[0];
-                    let assignedTo = assignedToDiv.innerText;
+                    let assignedToName = assignedToDiv.innerText;
                     let assignedToID = null;
                     for (const devKey of Object.keys(devs)) {
                         let dev = devs[devKey];
-                        if (dev.Name != assignedTo) { continue }
+                        if (dev.Name != assignedToName) { continue }
                         assignedToID = dev.ID;
-                        item.attr('data-assignee-staff-i-d', assignedToID)
                         break;
                     }
+                    item.attr('data-assignee-staff-i-d', assignedToID)
                 });
             }, 50);  // TODO: Delay needed?
         } catch (error) {
