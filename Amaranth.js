@@ -104,6 +104,8 @@
         kanbanboard.connection.on("moveCard", displayPointValues);
         kanbanboard.connection.on("moveCard", setAssignedData);
         kanbanboard.connection.on("updateprojectassignedto", setAssignedData);
+		
+		kanbanboard.projectDetailsModal.addInit(setupOpenSupportLogin);
 
     }
 
@@ -551,6 +553,58 @@
             eval(mdBlock);
         });
     }
+
+	const rmsAddons2Location = "https://roberthi.skyward.com/RMSAddons2/";
+
+    async function setupOpenSupportLogin(selector) {
+		const modal = $(selector);
+		const assignedToTypeDiv = modal.find(".ModalTypeCode");
+
+		if (assignedToTypeDiv.length === 0 || assignedToTypeDiv.text() !== "SC") {
+			return;
+		}
+
+		const projectLinks = modal.find(".ProjectLinksRow");
+		const supportLoginButtonsRow = $(`<div class="projectModalRow"></div>`);
+		const projectHeader = modal.find(".js-modalProjectSummary");
+		const projectID = projectHeader.data("project-id");
+
+		const projectInformation = await getProjectInformationFor(projectID);
+
+		if (projectInformation?.contactCompanyID) {
+			supportLoginButtonsRow.insertBefore(projectLinks);
+			$("<hr>").insertBefore(projectLinks);
+			const supportLoginLimitedButton = $("<button class=\"IQButton\">Support Login (Limited Access)</button>");
+			const supportLoginSCButton = $("<button class=\"IQButton\">Support Login (SC Access)</button>");
+
+			function openSupportLogin(limited) {
+				let supportLink = `https://hub.skyward.com/QmlativSupport?companyID=${projectInformation.contactCompanyID}&projectID=${projectID}`;
+
+				if (limited) {
+					supportLink = supportLink + `&limited=${true}`;
+				}
+
+				window.open(supportLink, "_blank").focus();
+			}
+
+			supportLoginLimitedButton.on("click", () => { openSupportLogin(true); });
+
+			supportLoginSCButton.on("click", () => { openSupportLogin(false); });
+
+			supportLoginButtonsRow.append(supportLoginLimitedButton);
+			supportLoginButtonsRow.append(supportLoginSCButton);
+		}
+	}
+
+	async function getProjectInformationFor(projectID) {
+		const response = await fetch(rmsAddons2Location + "Project/GetProjectInformation/" + projectID);
+
+		if (!response.ok) {
+			throw new Error(`Response status: ${response.status}`);
+		}
+
+		return await response.json();
+	}
 
     /** Adds custom styles */
     function addCustomStyles() {
