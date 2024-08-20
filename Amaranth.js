@@ -97,15 +97,13 @@
     }
     else  // On Regular Board
     {
-        displayPointValuesOnGoal()  // This sets up a click event so it shouldn't need to be reran
         kanbanboard.base.addInit(displayPointValues); // Show point values whenever the board is loaded or refreshed
         kanbanboard.base.addInit(setAssignedData);
         kanbanboard.base.addInit(autoMarkPatch);
         kanbanboard.connection.on("moveCard", displayPointValues);
         kanbanboard.connection.on("moveCard", setAssignedData);
         kanbanboard.connection.on("updateprojectassignedto", setAssignedData);
-		
-		kanbanboard.projectDetailsModal.addInit(setupOpenSupportLogin);
+        kanbanboard.projectDetailsModal.addInit(setupOpenSupportLogin);
 
     }
 
@@ -114,9 +112,8 @@
     {
         case devs.Austin.ID:
             enlargeGoalModal()
-            addOpenProjectControls();
+            // addOpenProjectControls();  // TODO: Make just add clipboard button
             addSignalRMethodLogs();
-            addCopyButtonsToPRModal();
             removeWIP();
             addMarkdownBlockRenderer();
             addMdBlockElementsHandler();
@@ -224,37 +221,6 @@
             }, 350);
         } catch (error) {
             console.error("CUSTOM SCRIPT: There was a problem when running the 'displayPointValues' script:");
-            console.error(error);
-        }
-    }
-
-    /** Displays project point values and totals on the goal modal */
-    function displayPointValuesOnGoal() {
-        try {
-            $(".menuItems #CycleGoal").click(() => {
-                setTimeout(() => {
-                    let goalPoints = 0;
-
-                    // Loop through each project in goal
-                    $("tbody .cycleGoal__projectSize").each(( _, row ) => {
-                        let sizeElem = $(row);
-                        let projectValue = projectPoints[sizeElem.text().trim()];
-                        if (projectValue == undefined) {
-                            return true;  // continue
-                         }
-                        row.append(`(${projectValue})`);
-                        goalPoints += projectValue;
-                    });
-
-                    // Add "Total Point" section
-                    $(".projectModalRow").append(`
-                        <span>Total Points:</span>
-                        <span id="CycleGoal_TotalPoints" class="cycleGoal__details">${goalPoints}</span>`
-                    );
-                }, 1000);
-            });
-        } catch (error) {
-            console.error("CUSTOM SCRIPT: There was a problem when running the 'displayPointValuesOnGoal' script:");
             console.error(error);
         }
     }
@@ -385,38 +351,6 @@
             $("span[title=\"Work in Progress\"]").contents().remove();
         } catch (error) {
             console.error("CUSTOM SCRIPT: There was a problem when running the 'removeWIP' script:");
-            console.error(error);
-        }
-    }
-
-    function addCopyButtonsToPRModal() {
-        try {
-            function generateCopyElement(copyValue, size=16) {return $.parseHTML(
-                `<span><clipboard-copy aria-label="Copy" data-copy-feedback="Copied!" value="${copyValue}" data-view-component="true" class="Link--onHover ml-1" tabindex="0" role="button">
-                    <svg aria-hidden="true" fill="var(--primary-color)" height="${size}" viewBox="0 0 16 16" version="1.1" width="${size}" data-view-component="true" class="copy">
-                        <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
-                    </svg>
-                    <svg style="display: none;" fill="green" aria-hidden="true" height="${size}" viewBox="0 0 16 16" version="1.1" width="${size}" data-view-component="true" class="check">
-                        <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
-                    </svg>
-                </clipboard-copy></span>`);}
-
-            function copy(text) {
-                return navigator.clipboard.writeText(text);
-            }
-
-            function addCopyButtons() {
-                let summary = $(".ModalPopup").last().find(".ModalProjectSummary");
-                let copyIDButton = generateCopyElement(summary.attr("data-project-id"), 20);
-                let copySummaryButton = generateCopyElement(summary.text(), 20);
-                summary.prepend(copyIDButton[0]);
-                summary.append(copySummaryButton[0]);
-            }
-
-            kanbanboard.projectDetailsModal.addInit(addCopyButtons);
-            $(document).on("click", "clipboard-copy", (e) => { copy(e.currentTarget.getAttribute("value")); });
-        } catch (error) {
-            console.error("CUSTOM SCRIPT: There was a problem when running the 'addCopyButtonsToPRModal' script:");
             console.error(error);
         }
     }
@@ -554,57 +488,64 @@
         });
     }
 
-	const rmsAddons2Location = "https://roberthi.skyward.com/RMSAddons2/";
-
+    const rmsAddons2Location = "https://roberthi.skyward.com/RMSAddons2/";
+    /** Adds buttons to service calls linking directly to Support Accounts */
     async function setupOpenSupportLogin(selector) {
-		const modal = $(selector);
-		const assignedToTypeDiv = modal.find(".ModalTypeCode");
+        try {
+            const modal = $(selector);
+            const assignedToTypeDiv = modal.find(".ModalTypeCode");
 
-		if (assignedToTypeDiv.length === 0 || assignedToTypeDiv.text() !== "SC") {
-			return;
-		}
+            if (assignedToTypeDiv.length === 0 || assignedToTypeDiv.text() !== "SC") {
+                return;
+            }
 
-		const projectLinks = modal.find(".ProjectLinksRow");
-		const supportLoginButtonsRow = $(`<div class="projectModalRow"></div>`);
-		const projectHeader = modal.find(".js-modalProjectSummary");
-		const projectID = projectHeader.data("project-id");
+            const projectLinks = modal.find(".ProjectLinksRow");
+            const supportLoginButtonsRow = $(`<div class="projectModalRow"></div>`);
+            const projectHeader = modal.find(".js-modalProjectSummary");
+            const projectID = projectHeader.data("project-id");
 
-		const projectInformation = await getProjectInformationFor(projectID);
+            const projectInformation = await getProjectInformationFor(projectID);
 
-		if (projectInformation?.contactCompanyID) {
-			supportLoginButtonsRow.insertBefore(projectLinks);
-			$("<hr>").insertBefore(projectLinks);
-			const supportLoginLimitedButton = $("<button class=\"IQButton\">Support Login (Limited Access)</button>");
-			const supportLoginSCButton = $("<button class=\"IQButton\">Support Login (SC Access)</button>");
+            if (projectInformation?.contactCompanyID) {
+                supportLoginButtonsRow.insertBefore(projectLinks);
+                $("<hr>").insertBefore(projectLinks);
+                const supportLoginLimitedButton = $("<button class=\"IQButton\">Support Login (Limited Access)</button>");
+                const supportLoginSCButton = $("<button class=\"IQButton\">Support Login (SC Access)</button>");
 
-			function openSupportLogin(limited) {
-				let supportLink = `https://hub.skyward.com/QmlativSupport?companyID=${projectInformation.contactCompanyID}&projectID=${projectID}`;
+                function openSupportLogin(limited) {
+                    let supportLink = `https://hub.skyward.com/QmlativSupport?companyID=${projectInformation.contactCompanyID}&projectID=${projectID}`;
 
-				if (limited) {
-					supportLink = supportLink + `&limited=${true}`;
-				}
+                    if (limited) {
+                        supportLink = supportLink + `&limited=${true}`;
+                    }
 
-				window.open(supportLink, "_blank").focus();
-			}
+                    window.open(supportLink, "_blank").focus();
+                }
 
-			supportLoginLimitedButton.on("click", () => { openSupportLogin(true); });
+                supportLoginLimitedButton.on("click", () => { openSupportLogin(true); });
 
-			supportLoginSCButton.on("click", () => { openSupportLogin(false); });
+                supportLoginSCButton.on("click", () => { openSupportLogin(false); });
 
-			supportLoginButtonsRow.append(supportLoginLimitedButton);
-			supportLoginButtonsRow.append(supportLoginSCButton);
-		}
-	}
+                supportLoginButtonsRow.append(supportLoginLimitedButton);
+                supportLoginButtonsRow.append(supportLoginSCButton);
+            }
+        } catch (error) {
+            console.error(
+                "CUSTOM SCRIPT: There was a problem when running the 'setupOpenSupportLogin()' script function:"
+            );
+            console.error(error);
+        }
+    }
 
-	async function getProjectInformationFor(projectID) {
-		const response = await fetch(rmsAddons2Location + "Project/GetProjectInformation/" + projectID);
+    async function getProjectInformationFor(projectID) {
+        const response = await fetch(rmsAddons2Location + "Project/GetProjectInformation/" + projectID);
 
-		if (!response.ok) {
-			throw new Error(`Response status: ${response.status}`);
-		}
+        if (!response.ok) {
+            throw new Error(`Response status: ${response.status}`);
+        }
 
-		return await response.json();
-	}
+        return await response.json();
+    }
 
     /** Adds custom styles */
     function addCustomStyles() {
@@ -657,6 +598,10 @@ clipboard-copy:hover svg {
 md-block > p {
     display: inline-block;
     width: 100%;
+}
+
+.IQButton {
+    margin: 0 4px;
 }
 
 ${devStyles}
