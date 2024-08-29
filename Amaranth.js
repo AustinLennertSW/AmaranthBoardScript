@@ -89,8 +89,6 @@
 
     const isOnBacklog = kanbanboard.base == undefined;
 
-    addCustomStyles();
-
     if (isOnBacklog) {
         displayPointValues();
         kanbanboard.connection.on("refreshBacklog", () => { setTimeout(displayPointValues, 500); });
@@ -112,7 +110,7 @@
     {
         case devs.Austin.ID:
             enlargeGoalModal()
-            // addOpenProjectControls();  // TODO: Make just add clipboard button
+            addOpenProjectFromClipboardButton();
             addSignalRMethodLogs();
             removeWIP();
             addMarkdownBlockRenderer();
@@ -124,6 +122,8 @@
             removeWIP();
             break;
     }
+
+    addCustomStyles();
 
     function getTheme()
     {
@@ -386,43 +386,10 @@
     }
 
     /**
-     * Adds a control to the right of the header to open any PR on the board even if the project isn't on the board
+     * Adds a control to open the PR with the ID in the systems clipboard
      */
-    function addOpenProjectControls() {
+    function addOpenProjectFromClipboardButton() {
         try {
-            const openProjectModal = () => kanbanboard.projectDetailsModal.create(Number.parseInt(projectIdTextInput.val()));
-            const projectIdTextInput = $('<input>')
-            .attr('id', 'projectid')
-            .attr('name', 'projectid')
-            .attr('type', 'text')
-            .attr('placeholder', 'Project ID')
-            .addClass('teamSelector boardNavigation__control')
-            .css({
-                cursor: 'text',
-                padding: '5px 9px',
-                'font-size': '16px',
-                height: '33px',
-                'box-sizing': 'border-box',
-                width: '7em',
-                'text-align': 'start',
-            })
-            .click(function () {
-                $(this).select();
-            })
-            .keypress(function (event) {
-                if (event.key === 'Enter') {
-                    openProjectModal();
-                }
-            });
-
-            const openButton = $('<button>')
-            .addClass('TriggerRefine')
-            .css({
-                'border-radius': '5px 0 0 5px'
-            })
-            .text('Open')
-            .click(openProjectModal);
-
             const pasteButton = $(`<button class="TriggerRefine"><svg id="Paste_24" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><rect width="24" height="24" stroke="none" fill="#000000" opacity="0"></rect><g transform="matrix(0.74 0 0 0.74 12 12)"><path style="stroke: none;stroke-width: 1;stroke-dasharray: none;stroke-linecap: butt;stroke-dashoffset: 0;stroke-linejoin: miter;stroke-miterlimit: 4;fill: var(--primary-color);fill-rule: nonzero;opacity: 1;" transform=" translate(-15, -13.5)" d="M 15 0 C 13.35499 0 12 1.3549904 12 3 L 8 3 C 6.3550302 3 5 4.3550302 5 6 L 5 24 C 5 25.64497 6.3550302 27 8 27 L 22 27 C 23.64497 27 25 25.64497 25 24 L 25 6 C 25 4.3550302 23.64497 3 22 3 L 18 3 C 18 1.3549904 16.64501 0 15 0 z M 15 2 C 15.564129 2 16 2.4358706 16 3 C 16 3.5641294 15.564129 4 15 4 C 14.435871 4 14 3.5641294 14 3 C 14 2.4358706 14.435871 2 15 2 z M 8 5 L 12 5 L 12 6 C 12 6.552 12.448 7 13 7 L 17 7 C 17.552 7 18 6.552 18 6 L 18 5 L 22 5 C 22.56503 5 23 5.4349698 23 6 L 23 24 C 23 24.56503 22.56503 25 22 25 L 8 25 C 7.4349698 25 7 24.56503 7 24 L 7 6 C 7 5.4349698 7.4349698 5 8 5 z" stroke-linecap="round"></path></g></svg></button>`)
             .css({
                 'padding': '2px',
@@ -430,18 +397,12 @@
             })
             .click(() => {
                 navigator.clipboard.readText().then(text => {
-                    $("#projectid").val(text);
-                    openProjectModal();
+                    $(".boardControl__searchBox.js-projectSearch").val(text);
+                    $(".boardControl__searchButton").click();
                 });
             });
 
-            const controlSpan = $('<span>')
-            .addClass('FlexBoxItem TeamInfoText boardNavigation')
-            .append(projectIdTextInput)
-            .append(openButton)
-            .append(pasteButton);
-
-            controlSpan.appendTo('.menuItems');
+            $(".FlexBoxItem.boardControl__searchContainer").append(pasteButton);
         } catch (error) {
             console.error(
                 "CUSTOM SCRIPT: There was a problem when running the 'addOpenProjectControls()' script function:"
@@ -452,40 +413,54 @@
 
     /** Adds md-block elements where markdown would be nice */
     function addMdBlockElementsHandler() {
-        const addMdBlockElements = () => {
-            // Add md-block to project description
-            let projectHrs = $(".ModalContent > .ProjectDescription > hr");
-            // Isolate the contents between the last 2 headers, as the content here is the description
-            $(projectHrs[1]).nextUntilWithTextNodes(projectHrs[2]).wrapAll("<div class='converttomdblock'>");
-            let parsedDescription = $(".converttomdblock");
-            let contents = parsedDescription[0].innerHTML;
-            parsedDescription.contents().remove();
-            parsedDescription.append(`<md-block>${contents}</md-block>`);
+        try {
+            const addMdBlockElements = () => {
+                // Add md-block to project description
+                let projectHrs = $(".ModalContent > .ProjectDescription > hr");
+                // Isolate the contents between the last 2 headers, as the content here is the description
+                $(projectHrs[1]).nextUntilWithTextNodes(projectHrs[2]).wrapAll("<div class='converttomdblock'>");
+                let parsedDescription = $(".converttomdblock");
+                let contents = parsedDescription[0].innerHTML;
+                parsedDescription.contents().remove();
+                parsedDescription.append(`<md-block>${contents}</md-block>`);
 
-            // Add md-block to action notes
-            $(".ModalPopup").last().find(".js-projectActions .js-actionContainer").each((_, action) =>{
-                let actionNote = $(action).find(".ActionNotes > p");
-                let textContent = actionNote.text();
-                actionNote.contents().filter(function(){ return this.nodeType != 1; }).remove();  // Deletes text content
-                actionNote.append(`<md-block>${textContent}</md-block>`);
+                // Add md-block to action notes
+                $(".ModalPopup").last().find(".js-projectActions .js-actionContainer").each((_, action) =>{
+                    let actionNote = $(action).find(".ActionNotes > p");
+                    let textContent = actionNote.text();
+                    actionNote.contents().filter(function(){ return this.nodeType != 1; }).remove();  // Deletes text content
+                    actionNote.append(`<md-block>${textContent}</md-block>`);
 
-            })
+                })
+            }
+            kanbanboard.projectDetailsModal.addInit(addMdBlockElements);
+        } catch (error) {
+            console.error(
+                "CUSTOM SCRIPT: There was a problem when running the 'addMdBlockElementsHandler()' script function:"
+            );
+            console.error(error);
         }
-        kanbanboard.projectDetailsModal.addInit(addMdBlockElements);
     }
 
     /** Sets up https://www.makeuseof.com/md-block-render-markdown-web-page/ to render md-block elements*/
     function addMarkdownBlockRenderer() {
-        // Gets the js for the library and invokes it
-        const mdBlockJSURL = "https://md-block.verou.me/md-block.js";
-        fetch(mdBlockJSURL, { method: "GET" })
-            .then((res) => {
-            return res.text();
-        })
-            .then((text) => {
-            let mdBlock = text.replaceAll("export ", "");
-            eval(mdBlock);
-        });
+        try {
+            // Gets the js for the library and invokes it
+            const mdBlockJSURL = "https://md-block.verou.me/md-block.js";
+            fetch(mdBlockJSURL, { method: "GET" })
+                .then((res) => {
+                return res.text();
+            })
+                .then((text) => {
+                let mdBlock = text.replaceAll("export ", "");
+                eval(mdBlock);
+            });
+        } catch (error) {
+            console.error(
+                "CUSTOM SCRIPT: There was a problem when running the 'addMarkdownBlockRenderer()' script function:"
+            );
+            console.error(error);
+        }
     }
 
     const rmsAddons2Location = "https://roberthi.skyward.com/RMSAddons2/";
@@ -555,9 +530,7 @@
             let assigneeStyles = "";
 
             const addDevColor = (dev) => { devColors += `--devColor${dev.ID}: ${getColor(dev)}; `; }
-
             const addDevStyle = (dev) => { devStyles += `.Project[data-developer-staff-i-d="${dev.ID}"] { --devColorMain: var(--devColor${dev.ID}) } \n`; }
-
             const addAssigneeStyle = (dev) => { assigneeStyles += `.Project[data-assignee-staff-i-d="${dev.ID}"] { --devColorAssigned: var(--devColor${dev.ID}) } \n`; }
 
             for (const devKey of Object.keys(devs)) {
@@ -602,6 +575,15 @@ md-block > p {
 
 .IQButton {
     margin: 0 4px;
+}
+
+.boardControl__searchButton {
+    border-radius: 5px 0 0 5px;
+    margin-left: 4px;
+}
+
+.boardControl__searchContainer {
+    gap: 0;
 }
 
 ${devStyles}
