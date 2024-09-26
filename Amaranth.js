@@ -470,7 +470,7 @@
             const modal = $(selector);
             const assignedToTypeDiv = modal.find(".ModalTypeCode");
 
-            if (assignedToTypeDiv.length === 0 || assignedToTypeDiv.text() !== "SC") {
+            if (assignedToTypeDiv.length === 0 || (assignedToTypeDiv.text() !== "SC" && assignedToTypeDiv.text() !== "HS" && assignedToTypeDiv.text() !== "CA")) {
                 return;
             }
 
