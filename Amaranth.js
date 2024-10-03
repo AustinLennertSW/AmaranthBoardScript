@@ -546,7 +546,7 @@
     --devColorMain: var(--secondary-color-bg);
     --devColorAssigned: var(--secondary-color-bg);
 }
-.Project[data-developer-staff-i-d*='1'] {
+.Project[data-developer-staff-i-d*='1']:not(.project__runningActionBackground) {
     background: linear-gradient(var(--devColorMain), var(--devColorMain), var(--devColorAssigned));
 }
 
