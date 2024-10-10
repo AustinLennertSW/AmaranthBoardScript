@@ -95,6 +95,7 @@
     }
     else  // On Regular Board
     {
+        addMiscMeetingsProject();
         kanbanboard.base.addInit(displayPointValues); // Show point values whenever the board is loaded or refreshed
         kanbanboard.base.addInit(setAssignedData);
         kanbanboard.base.addInit(autoMarkPatch);
@@ -520,6 +521,42 @@
         }
 
         return await response.json();
+    }
+
+    //** Gets the HTML for a project card */
+    async function getProjectCard(projectID, renderType = null) {
+        return await $.ajax({
+            url: `/${kanbanboard.server}/api/Board/GetProjectCard`,
+            data:
+            {
+                projectID,
+                teamName: kanbanboard.teamName,
+                renderType
+            },
+            method: 'GET',
+            error: function ()
+        {
+                kanbanboard.utils.notify("Could not load project card");
+            }
+        });
+    }
+
+    /** Adds a project card to the Non-Programming category for Misc. Meetings */
+    async function addMiscMeetingsProject() {
+        try {
+            let miscMeetingProjectID = 5943306;
+            let projectCard = $($.parseHTML(await getProjectCard(miscMeetingProjectID, 2)));
+            // Not a render type for these types of cards, so remove the stuff to make it look like them
+            projectCard.find(".project__menuPath").remove();
+            projectCard.find(".ProjectSubStatus").remove();
+            projectCard.find(".ProjectAssignedTo").remove();
+            projectCard.find(".BottomInfo").remove();
+            projectCard.find(".TypeCode").remove();
+            $("#Non-ProgrammingContainer > div.Column.FlexBoxContainer.CollapsibleBody").append(projectCard);
+        } catch (error) {
+            console.error("CUSTOM SCRIPT: There was a problem when running the 'addMiscMeetingsProject' script:");
+            console.error(error);
+        }
     }
 
     /** Adds custom styles */
