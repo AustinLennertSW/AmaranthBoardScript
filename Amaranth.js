@@ -114,6 +114,7 @@
             addOpenProjectFromClipboardButton();
             addSignalRMethodLogs();
             removeWIP();
+            kanbanboard.projectDetailsModal.addInit(hideUnnecessaryActionDescriptions);
             break;
 
         case devs.Ski.ID:
@@ -354,6 +355,26 @@
         }
     }
 
+    /**
+     * This makes actions which have identical summaries and notes seem not expandable so the user knows they don't need to expand the action as there isn't any more info.
+     * Still expandable on click though, just doesn't appear that way
+     */
+    function hideUnnecessaryActionDescriptions() {
+        try {
+            $('.Action.CollapsibleSection').each((_, action) => {
+                let item = $(action);
+                let summary = item.find(".ActionSummary");
+                if (!(summary[0].scrollWidth > summary[0].offsetWidth) && summary.text().trim() == item.find(".ActionNotes").text().trim())
+                {
+                    item.find(".CollapsibleHeader").addClass("IgnoreCollapsible");
+                }
+            });
+        } catch (error) {
+            console.error("CUSTOM SCRIPT: There was a problem when running the 'hideUnnecessaryActionDescriptions' script:");
+            console.error(error);
+        }
+    }
+
     /** Adds logging for Signal R methods for debugging */
     function addSignalRMethodLogs() {
         try {
@@ -555,6 +576,18 @@
 .boardControl__searchContainer {
     gap: 0;
 }
+
+.IgnoreCollapsible {
+    cursor: inherit;
+}
+    .IgnoreCollapsible::before {
+        content: ' ';
+        margin-right: "20px";
+    }
+    .IgnoreCollapsible:hover {
+        background-color: var(--secondary-color-bg);
+    }
+
 
 ${devStyles}
 ${assigneeStyles}
