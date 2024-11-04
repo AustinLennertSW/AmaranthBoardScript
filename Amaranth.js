@@ -114,8 +114,6 @@
             addOpenProjectFromClipboardButton();
             addSignalRMethodLogs();
             removeWIP();
-            addMarkdownBlockRenderer();
-            addMdBlockElementsHandler();
             break;
 
         case devs.Ski.ID:
@@ -412,58 +410,6 @@
         }
     }
 
-    /** Adds md-block elements where markdown would be nice */
-    function addMdBlockElementsHandler() {
-        try {
-            const addMdBlockElements = () => {
-                // Add md-block to project description
-                let projectHrs = $(".ModalContent > .ProjectDescription > hr");
-                // Isolate the contents between the last 2 headers, as the content here is the description
-                $(projectHrs[1]).nextUntilWithTextNodes(projectHrs[2]).wrapAll("<div class='converttomdblock'>");
-                let parsedDescription = $(".converttomdblock");
-                let contents = parsedDescription[0].innerHTML;
-                parsedDescription.contents().remove();
-                parsedDescription.append(`<md-block>${contents}</md-block>`);
-
-                // Add md-block to action notes
-                $(".ModalPopup").last().find(".js-projectActions .js-actionContainer").each((_, action) =>{
-                    let actionNote = $(action).find(".ActionNotes > p");
-                    let textContent = actionNote.text();
-                    actionNote.contents().filter(function(){ return this.nodeType != 1; }).remove();  // Deletes text content
-                    actionNote.append(`<md-block>${textContent}</md-block>`);
-
-                })
-            }
-            kanbanboard.projectDetailsModal.addInit(addMdBlockElements);
-        } catch (error) {
-            console.error(
-                "CUSTOM SCRIPT: There was a problem when running the 'addMdBlockElementsHandler()' script function:"
-            );
-            console.error(error);
-        }
-    }
-
-    /** Sets up https://www.makeuseof.com/md-block-render-markdown-web-page/ to render md-block elements*/
-    function addMarkdownBlockRenderer() {
-        try {
-            // Gets the js for the library and invokes it
-            const mdBlockJSURL = "https://md-block.verou.me/md-block.js";
-            fetch(mdBlockJSURL, { method: "GET" })
-                .then((res) => {
-                return res.text();
-            })
-                .then((text) => {
-                let mdBlock = text.replaceAll("export ", "");
-                eval(mdBlock);
-            });
-        } catch (error) {
-            console.error(
-                "CUSTOM SCRIPT: There was a problem when running the 'addMarkdownBlockRenderer()' script function:"
-            );
-            console.error(error);
-        }
-    }
-
     const rmsAddons2Location = "https://roberthi.skyward.com/RMSAddons2/";
     /** Adds buttons to service calls linking directly to Support Accounts */
     async function setupOpenSupportLogin(selector) {
@@ -595,19 +541,6 @@
     0% { background-color: #ff0000; }
     50% { background-color: #ff9999; }
     100% { background-color: #ff0000; }
-}
-
-clipboard-copy {
-    cursor: pointer;
-}
-
-clipboard-copy:hover svg {
-    fill: #4493f8;
-}
-
-md-block > p {
-    display: inline-block;
-    width: 100%;
 }
 
 .IQButton {
