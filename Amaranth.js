@@ -121,6 +121,10 @@
             enlargeGoalModal()
             removeWIP();
             break;
+
+        case devs.Spencer.ID:
+            removeTimeEstimates();
+            break;
     }
 
     addCustomStyles();
@@ -522,6 +526,20 @@
             $("#Non-ProgrammingContainer > div.Column.FlexBoxContainer.CollapsibleBody").append(projectCard);
         } catch (error) {
             console.error("CUSTOM SCRIPT: There was a problem when running the 'addMiscMeetingsProject' script:");
+            console.error(error);
+        }
+    }
+
+    /** Removes the Time Estimate information from projects while still allowing points to work */
+    function removeTimeEstimates() {
+        try {
+            $('head').append(`<style>
+.ProgressBar {
+    display: none !important;
+}
+</style>`);
+        } catch (error) {
+            console.error("CUSTOM SCRIPT: There was a problem when running the 'removeTimeEstimates' script:");
             console.error(error);
         }
     }
